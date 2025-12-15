@@ -1,0 +1,10 @@
+# Ignore generated image directories
+save/*
+!save/.gitkeep
+save_qrcode/*
+!save_qrcode/.gitkeep
+save_print_img/*
+!save_print_img/.gitkeep
+
+# Ignore environment file
+.env
