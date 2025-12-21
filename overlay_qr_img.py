@@ -12,6 +12,11 @@ from make_qrcode import generate_qr_code_image
 from imgbb import upload_image_to_imgbb
 
 def count_files(directory):
+    """
+    디렉토리 내 파일 개수를 반환합니다.
+    """
+    if not os.path.exists(directory):
+        return 0
     files = os.listdir(directory)
     file_count = len(files)
     return file_count
@@ -66,56 +71,39 @@ def add_qr_code_to_image(background, qr_code_img):
 
     return background
 
+def save_qr_code_only(qr_url, format='jpg', save_dir='save_qrcode_gif'):
+    """
+    URL을 받아 QR 코드를 생성하고 지정된 폴더에 저장한 뒤, 파일명과 QR 이미지 배열을 반환
+    """
+    os.makedirs(save_dir, exist_ok=True) # 지정된 저장 폴더가 없으면 생성
 
-def base64_to_mat(base64_data):
-    # base64 데이터가 4의 배수가 아니면 패딩 추가
-    padding = len(base64_data) % 4
-    if padding != 0:
-        base64_data += '=' * (4 - padding)
-
-    # base64 데이터를 바이트로 디코딩
-    img_data = base64.b64decode(base64_data)
-
-    # 바이트 데이터를 numpy 배열로 변환
-    img_array = np.frombuffer(img_data, dtype=np.uint8)
-
-    # numpy 배열을 OpenCV 이미지로 디코딩
-    mat_image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-
-    return mat_image
-
-def overlay_qr_on_image(data):
-    # Base64 헤더 제거 (data:image/png;base64, 등)
-    if ',' in data:
-        data = data.split(',')[1]
-
-    # Base64 디코딩 (이미지 데이터 획득)
-    img_data = base64.b64decode(data)
+    qr_code_img = generate_qr_code_image(qr_url, format=format)
     
-    # ImgBB 업로드 (메모리 상의 데이터 바로 전송)
-    img_url = upload_image_to_imgbb(img_data)
+    # 랜덤 파일명 생성
+    num_files = count_files(save_dir) # 지정된 폴더 기준으로 파일 개수 카운트
+    random_hex = ''.join(random.choice('0123456789ABCDEF') for _ in range(5))
+    qr_filename = f"qr_{random_hex}_{num_files}.png"
+    
+    cv2.imwrite(f"./{save_dir}/{qr_filename}", qr_code_img)
+    
+    return qr_filename, qr_code_img
 
-    # OpenCV 이미지 변환
-    nparr = np.frombuffer(img_data, np.uint8)
-    img_array = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+def compose_final_image(static_image_bytes, qr_code_img):
+    """
+    이미지 바이트와 QR 코드 이미지(numpy array)를 받아 합성 후 저장
+    """
+    # Bytes -> OpenCV Image 변환
+    nparr = np.frombuffer(static_image_bytes, np.uint8)
+    background_img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-    # QR코드 생성 (메모리 상에서 이미지 객체 획득)
-    qr_code_img = generate_qr_code_image(img_url)
+    # QR 코드 합성
+    final_img = add_qr_code_to_image(background_img, qr_code_img)
 
-    # QR 코드 합성 (메모리 상의 QR 이미지 사용)
-    background_with_overlays_with_QR = add_qr_code_to_image(img_array, qr_code_img)
-
-    # 파일 저장 준비
+    # 파일 저장
     num_files = count_files('./save')
     random_hex = ''.join(random.choice('0123456789ABCDEF') for _ in range(5))
-    random_path = f'{num_files + 1}-{random_hex}'
+    save_path_name = f'{num_files + 1}-{random_hex}'
     
-    # 최종 결과 저장
-    cv2.imwrite(f'./save/{random_path}.png', background_with_overlays_with_QR)
+    cv2.imwrite(f'./save/{save_path_name}.png', final_img)
     
-    # Main.py 요구사항(QR URL 반환)을 위해 QR 코드 별도 저장
-    qr_filename = f"{random_path}_qrcode.png"
-    cv2.imwrite(f"./save_qrcode/{qr_filename}", qr_code_img)
-
-    # base64로 인코딩된 이미지 데이터 반환
-    return random_path, qr_filename
+    return save_path_name

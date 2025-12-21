@@ -8,14 +8,14 @@ import cv2
 
 import qrcode
 
-def generate_qr_code_image(url):
-    # 정규식 패턴을 사용하여 VHcQhFN 및 7bfd23e1883f 추출
-    match = re.search(r'https://i\.ibb\.co/([^/]+)/([^/]+)\.jpg', url)
+def generate_qr_code_image(url, format='jpg'):
+    # 정규식 패턴을 사용하여 VHcQhFN 및 7bfd23e1883f 추출 (jpg, png, gif 지원)
+    match = re.search(r'https://i\.ibb\.co/([^/]+)/([^/]+)\.(jpg|png|gif)', url)
 
     if match:
         data1 = match.group(1)
         data2 = match.group(2)
-        target_url = f'https://4cut.vercel.app/ImageDownloadPage?data1={data1}&data2={data2}'
+        target_url = f'https://4cut.vercel.app/ImageDownloadPage?data1={data1}&data2={data2}&format={format}'
     else:
         print("URL 형식이 맞지 않습니다.")
         target_url = url # fallback

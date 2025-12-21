@@ -1,23 +1,22 @@
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile, File, Form, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
 import uvicorn
 
-from overlay_qr_img import overlay_qr_on_image
-from print_img import printImgs
+from service import upload_gif_and_create_qr, background_full_process, GIF_QR_SAVE_DIR
 
-# Ensure save directory exists
+# Ensure save directories exist
 os.makedirs("save", exist_ok=True)
+os.makedirs("save_print_img", exist_ok=True)
+os.makedirs(GIF_QR_SAVE_DIR, exist_ok=True)
+os.makedirs("save_qrcode_static", exist_ok=True)
 
 app = FastAPI()
 
-# Mount the static directory to serve images
+# Mount directories
 app.mount("/images", StaticFiles(directory="save"), name="images")
-app.mount("/qrcodes", StaticFiles(directory="save_qrcode"), name="qrcodes")
-
+app.mount("/qrcodes", StaticFiles(directory=GIF_QR_SAVE_DIR), name="qrcodes")
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,11 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class PRINTOUT_INFO(BaseModel):
-    printoutNum: int
-    base64_data: str
-
-@app.post("/shutdown") # 라즈베리파이 종료 api
+@app.post("/shutdown")
 def shutdown_raspberry_pi():
     os.system("sudo shutdown -h now")
     return {"message": "라즈베리파이가 종료됩니다..."}
@@ -41,16 +36,41 @@ async def root():
     return {"message": "Hello World"}
 
 @app.post("/printImgs")
-def read_root(data: PRINTOUT_INFO, request: Request):
-    combined_img_path, qr_img_path = overlay_qr_on_image(data.base64_data)
-    printImgs(data.printoutNum, combined_img_path)
+async def read_root(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    print_count: str = Form(...),
+    static_file: UploadFile = File(...),
+    gif_file: UploadFile = File(...)
+):
+    print("ddd")
+    try:
+        # 파일 읽기
+        static_bytes = await static_file.read()
+        gif_bytes = await gif_file.read()
 
-    image_url = f"{request.base_url}qrcodes/{qr_img_path}"
+        # 1. [Fast] GIF만 먼저 업로드 및 QR 생성
+        qr_filename, gif_url = await upload_gif_and_create_qr(gif_bytes)
 
-    return {
-        'msg': 'success',
-        'image_url': image_url
-    }
+        # 2. [Slow] Static 이미지 업로드 및 인쇄 작업은 백그라운드로 위임
+        try:
+            p_num = int(print_count)
+        except ValueError:
+            p_num = 1
+            
+        background_tasks.add_task(background_full_process, p_num, static_bytes)
+
+        # 3. 즉시 응답 반환
+        qr_image_url = f"{request.base_url}qrcodes/{qr_filename}"
+        
+        return {
+            'msg': 'success',
+            'image_url': qr_image_url,
+            'gif_url': gif_url 
+        }
+
+    except Exception as e:
+        return {"msg": "fail", "error": str(e)}
 
 if __name__ == "__main__":
     uvicorn.run(

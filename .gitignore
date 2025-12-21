@@ -1,8 +1,12 @@
 # Ignore generated image directories
 save/*
 !save/.gitkeep
-save_qrcode/*
-!save_qrcode/.gitkeep
+
+save_qrcode_gif/*
+!save_qrcode_gif/.gitkeep
+save_qrcode_static/*
+!save_qrcode_static/.gitkeep
+
 save_print_img/*
 !save_print_img/.gitkeep
 
