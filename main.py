@@ -43,7 +43,6 @@ async def read_root(
     static_file: UploadFile = File(...),
     gif_file: UploadFile = File(...)
 ):
-    print("ddd")
     try:
         # 파일 읽기
         static_bytes = await static_file.read()
