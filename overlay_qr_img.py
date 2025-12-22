@@ -75,8 +75,7 @@ def save_qr_code_only(qr_url, format='jpg', save_dir='save_qrcode_gif'):
     """
     URL을 받아 QR 코드를 생성하고 지정된 폴더에 저장한 뒤, 파일명과 QR 이미지 배열을 반환
     """
-    os.makedirs(save_dir, exist_ok=True) # 지정된 저장 폴더가 없으면 생성
-
+    
     qr_code_img = generate_qr_code_image(qr_url, format=format)
     
     # 랜덤 파일명 생성

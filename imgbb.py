@@ -10,24 +10,34 @@ load_dotenv()
 SERVICE_KEY = os.getenv('IMGBB_API_KEY')
 
 
-def upload_image_to_imgbb(image_data):
-    # image_data가 bytes 타입이면 base64 문자열로 인코딩
-    if isinstance(image_data, bytes):
-        base64_image = base64.b64encode(image_data).decode('utf-8')
-    else:
-        # 이미 문자열(Base64)이라면 그대로 사용
-        base64_image = image_data
-
+def upload_image_to_imgbb(image_data, filename="image.jpg"):
     url = "https://api.imgbb.com/1/upload"
+    
+    # 기본 파라미터 (API 키)
     payload = {
         "key": SERVICE_KEY,
-        "image": base64_image,
     }
-    
-    response = requests.post(url, data=payload)
-    
-    if response.status_code == 200:
-        data = response.json()
-        return data['data']['url']
-    else:
+
+    try:
+        if isinstance(image_data, bytes):
+            # 바이너리 데이터인 경우: multipart/form-data로 직접 전송
+            # 호출부에서 넘겨준 filename 사용 (예: "image.gif")
+            files = {
+                "image": (filename, image_data)
+            }
+            response = requests.post(url, data=payload, files=files)
+        else:
+            # 문자열(Base64 또는 URL)인 경우: 기존 방식 호환
+            payload["image"] = image_data
+            response = requests.post(url, data=payload)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return data['data']['url']
+        else:
+            print(f"ImgBB Upload Error: {response.status_code} - {response.text}")
+            return None
+            
+    except Exception as e:
+        print(f"ImgBB Exception: {e}")
         return None
