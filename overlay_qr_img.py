@@ -1,15 +1,9 @@
-import json
 import cv2
 import random
 import os
-import base64
-from io import BytesIO
-from PIL import Image
 import numpy as np
 
 from make_qrcode import generate_qr_code_image
-
-from imgbb import upload_image_to_imgbb
 
 def count_files(directory):
     """

@@ -1,11 +1,5 @@
-import subprocess
-import time
 import re
-import os
-import requests
 import numpy as np
-import cv2
-
 import qrcode
 
 def generate_qr_code_image(url, format='jpg'):
