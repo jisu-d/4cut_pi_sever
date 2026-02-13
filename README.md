@@ -9,6 +9,13 @@
 2.  **Hotspot AP:** 촬영 기기를 위한 독립적인 Wi-Fi 네트워크 환경 지원
 3.  **UX 최적화:** GIF 업로드 및 QR 생성 선처리로 대기 시간 최소화 (Non-blocking)
 
+## 동작 시나리오 (Workflow)
+
+1.  **준비:** 라즈베리파이(Print Server)가 **Wi-Fi 핫스팟**을 생성하고 대기합니다.
+2.  **연결:** 촬영 기기(iPad, PC 등)에서 라즈베리파이 Wi-Fi에 접속합니다.
+3.  **요청:** 촬영 기기에서 사진을 찍고 `/printImgs` API로 전송합니다. 화면에 표시할 QR 코드 이미지를 반환합니다.
+4.  **출력:** 라즈베리파이가 사진을 처리(QR 생성, 합성)하고 USB 연결된 프린터로 인쇄합니다.
+
 ## 기술 스택
 
 *   **Core:** Python 3.11+, FastAPI, Uvicorn
@@ -37,6 +44,7 @@
 *   **OS:** Raspberry Pi OS (Linux)
 *   **패키지 설치:** `sudo apt install cups libopencv-dev`
 *   **프린터 설정:** CUPS 드라이버 설치 및 `print_img.py` 내 프린터 이름 수정
+*   **네트워크 구성 (중요):** 라즈베리파이는 **Wi-Fi 핫스팟(AP)** 역할을 수행하지만, ImgBB 업로드를 위해서는 **유선 LAN(Ethernet)** 등을 통해 외부 인터넷에 연결되어 있어야 합니다.
 
 ## 서버 실행
 
